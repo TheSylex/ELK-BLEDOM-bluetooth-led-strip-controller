@@ -1,0 +1,11 @@
+[package]
+name = "blte_test"
+version = "0.1.0"
+authors = ["TheSylex"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+btleplug = '0.5.4'
+rand = '0.7.3'
