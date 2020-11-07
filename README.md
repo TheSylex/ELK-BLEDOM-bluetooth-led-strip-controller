@@ -16,7 +16,7 @@ Controller for sending commands to Chinese generic Bluetooth receiver ELK-BLEDOM
 
 `device.set_custom_time(17, 00, 00, 3);` Set time (Hour, Minute, Second, Day_of_week(1-7)) ||| Hour: 17:00:00 <--> Day: 3|Wednesday
 
-The time of the device syncs automatically with the system time when intializing a device anyway, so generally speaking, don't use this.
+The time of the device syncs automatically with the system time when intializing a device anyway, so generally speaking, don't use `set_custom_time()`.
 
 ### `Modes`
 `device.set_color(255, 150, 100);` Set static color (R,G,B)
