@@ -15,6 +15,7 @@ Controller for sending commands to Chinese generic Bluetooth receiver ELK-BLEDOM
 `device.set_schedule_off(WEEK_DAYS.week_days, 23, 45, true);` Set schedule for powering the leds off at a given time
 
 `device.set_custom_time(17, 00, 00, 3);` Set time (Hour, Minute, Second, Day_of_week(1-7)) ||| Hour: 17:00:00 <--> Day: 3|Wednesday
+
 The time of the device syncs automatically with the system time when intializing a device anyway, so generally speaking, don't use this.
 
 ### `Modes`
