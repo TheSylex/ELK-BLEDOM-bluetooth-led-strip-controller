@@ -1,5 +1,4 @@
 extern crate btleplug;
-extern crate rand;
 
 use btleplug::api::{Central, Peripheral, UUID};
 #[cfg(target_os = "linux")]
@@ -8,7 +7,7 @@ use btleplug::bluez::{adapter::ConnectedAdapter, manager::Manager};
 use btleplug::corebluetooth::{adapter::Adapter, manager::Manager};
 #[cfg(target_os = "windows")]
 use btleplug::winrtble::{adapter::Adapter, manager::Manager};
-use rand::{thread_rng, Rng};
+use chrono;
 use std::thread;
 use std::time::Duration;
 
@@ -24,6 +23,34 @@ fn get_central(manager: &Manager) -> ConnectedAdapter {
     let adapter = adapters.into_iter().nth(0).unwrap();
     adapter.connect().unwrap()
 }
+
+pub struct Days {
+    pub monday: u8,
+    pub tuesday: u8,
+    pub wednesday: u8,
+    pub thursday: u8,
+    pub friday: u8,
+    pub saturday: u8,
+    pub sunday: u8,
+    pub all: u8,
+    pub week_days: u8,
+    pub weekend_days: u8,
+    pub none: u8,
+}
+
+pub const WEEK_DAYS: Days = Days {
+    monday: 0x01,
+    tuesday: 0x02,
+    wednesday: 0x04,
+    thursday: 0x08,
+    friday: 0x10,
+    saturday: 0x20,
+    sunday: 0x40,
+    all: 0x01 + 0x02 + 0x04 + 0x08 + 0x10 + 0x20 + 0x40,
+    week_days: 0x01 + 0x02 + 0x04 + 0x08 + 0x10,
+    weekend_days: 0x20 + 0x40,
+    none: 0x00,
+};
 
 pub struct Effects {
     pub jump_red_green_blue: u8,
@@ -130,12 +157,52 @@ impl BleLedDevice {
             peripheral,
             characteristics,
         };
+        device.sync_time();
         device.power_on();
         device
     }
 
     fn get_characteristic(&self) -> &btleplug::api::Characteristic {
         self.characteristics.get(0).unwrap()
+    }
+
+    fn sync_time(&self) {
+        let system_time = chrono::offset::Local::now();
+        self.peripheral
+            .command(
+                self.get_characteristic(),
+                &[
+                    0x7e,
+                    0x00,
+                    0x83,
+                    chrono::Timelike::hour(&system_time) as u8,
+                    chrono::Timelike::minute(&system_time) as u8,
+                    chrono::Timelike::second(&system_time) as u8,
+                    chrono::Datelike::weekday(&system_time).number_from_monday() as u8,
+                    0x00,
+                    0xef,
+                ],
+            )
+            .unwrap();
+    }
+
+    pub fn set_custom_time(&self, hour: u8, minute: u8, second: u8, day_of_week: u8) {
+        self.peripheral
+            .command(
+                self.get_characteristic(),
+                &[
+                    0x7e,
+                    0x00,
+                    0x83,
+                    hour.min(23),
+                    minute.min(59),
+                    second.min(59),
+                    day_of_week.min(7).max(1),
+                    0x00,
+                    0xef,
+                ],
+            )
+            .unwrap();
     }
 
     pub fn power_on(&self) {
@@ -218,6 +285,65 @@ impl BleLedDevice {
                     0x00,
                     0xef,
                 ],
+            )
+            .unwrap();
+    }
+
+    pub fn set_schedule_on(&self, days: u8, hours: u8, minutes: u8, enabled: bool) {
+        let value;
+        if enabled {
+            value = days + 0x80;
+        } else {
+            value = days;
+        }
+        self.peripheral
+            .command(
+                self.get_characteristic(),
+                &[
+                    0x7e,
+                    0x00,
+                    0x82,
+                    hours.min(23),
+                    minutes.min(59),
+                    0x00,
+                    0x00,
+                    value,
+                    0xef,
+                ],
+            )
+            .unwrap();
+    }
+
+    pub fn set_schedule_off(&self, days: u8, hours: u8, minutes: u8, enabled: bool) {
+        let value;
+        if enabled {
+            value = days + 0x80;
+        } else {
+            value = days;
+        }
+        self.peripheral
+            .command(
+                self.get_characteristic(),
+                &[
+                    0x7e,
+                    0x00,
+                    0x82,
+                    hours.min(23),
+                    minutes.min(59),
+                    0x00,
+                    0x01,
+                    value,
+                    0xef,
+                ],
+            )
+            .unwrap();
+    }
+
+    pub fn generic_command(&self, id: u8, sub_id: u8, arg1: u8, arg2: u8, arg3: u8) {
+        self.peripheral
+            .command(
+                self.get_characteristic(),
+                &[0x7e, 0x00, id, sub_id, arg1, arg2, arg3, 0x00, 0xef],
             )
             .unwrap();
     }

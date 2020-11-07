@@ -8,4 +8,4 @@ edition = "2018"
 
 [dependencies]
 btleplug = "0.5.4"
-rand = "0.7.3"
+chrono = "0.4.19"
